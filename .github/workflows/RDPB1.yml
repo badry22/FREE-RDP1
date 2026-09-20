@@ -13,7 +13,7 @@ jobs:
           Expand-Archive -Path ngrok.zip -DestinationPath . -Force
           ./ngrok.exe authtoken $env:NGROK_AUTH_TOKEN
         env:
-          NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
+          NGROK_AUTH_TOKEN: ${ 3JJQrWsZHqhCMiRWk8TUIS8loMz_Y1JfMHD7NCcbesq3cDDx }
 
       - name: Enable RDP & Start Tunnel
         shell: pwsh
