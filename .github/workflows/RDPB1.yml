@@ -1,4 +1,4 @@
-name: RDP
+name: RDP/Terminal via tmate
 
 on: [workflow_dispatch]
 
@@ -6,40 +6,21 @@ jobs:
   build:
     runs-on: windows-latest
     steps:
-      - name: Download and Setup ngrok
+      - name: Enable RDP
         shell: pwsh
         run: |
-          Invoke-WebRequest https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-stable-windows-amd64.zip -OutFile ngrok.zip
-          Expand-Archive -Path ngrok.zip -DestinationPath . -Force
-          ./ngrok.exe authtoken $env:NGROK_AUTH_TOKEN
-        env:
-          NGROK_AUTH_TOKEN: 3JJQrWsZHqhCMiRWk8TUIS8loMz_Y1JfMHD7NCcbesq3cDDx
-
-      - name: Enable RDP & Start Tunnel
-        shell: pwsh
-        run: |
-          net user kamel123 MyStrong123 /add
-          net localgroup administrators kamel123 /add
+          net user kamel123 MyStrong123 /add | Out-Null
+          net localgroup administrators kamel123 /add | Out-Null
           Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name 'fDenyTSConnections' -Value 0
           Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
+
+      - name: Install tmate & Start Session
+        shell: bash
+        run: |
+          winget install tmate.tmate --accept-source-agreements --accept-package-agreements || true
+          # تشغيل tmate في الخلفية أو استخدام action جاهزة
+          echo "Installing via chocolatey/winget or alternative CLI..."
           
-          # تشغيل ngrok في الخلفية
-          Start-Process -FilePath "./ngrok.exe" -ArgumentList "tcp 3389" -NoNewWindow
-          Start-Sleep -Seconds 5
-          
-          # طباعة رابط الاتصال من API الخاص بـ ngrok
-          try {
-            $response = Invoke-RestMethod -Uri "http://127.0.0.1:4040/api/tunnels"
-            $tcpTunnel = $response.tunnels | Where-Object { $_.proto -eq 'tcp' }
-            Write-Host "=========================================="
-            Write-Host "RDP Address: $($tcpTunnel.public_url)"
-            Write-Host "User: kamel123"
-            Write-Host "Pass: MyStrong123"
-            Write-Host "=========================================="
-          } catch {
-            Write-Host "Failed to query ngrok API: $_"
-          }
-          
-          # إبقاء الـ Job مفتوحة لكي تتمكن من الاتصال (مثلاً ساعة واحدة)
-          Write-Host "Keeping runner alive for session..."
-          Start-Sleep -Seconds 3600
+      - name: Use tmate action (Easier)
+        uses: mxschmitt/action-tmate@v3
+        timeout-minutes: 60
